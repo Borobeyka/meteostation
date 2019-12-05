@@ -49,7 +49,7 @@ void setup(void) {
 
     //loadDataFromEEPROM();
     loadClock();
-    drawClock(15, 33, 2, 0, true);
+    drawClock(10, 34, 2, 0, true);
 }
 
 void loop(void) {
@@ -99,16 +99,15 @@ void loadDataFromEEPROM(void) {
 void drawClock(byte hours, byte minutes, byte x, byte y, boolean dots) {
     lcd.clear();
 
-    if (hours / 10 == 0) drawDig(10, x, y);
-    else drawDig(hours / 10, x, y);
-    drawDig(hours % 10, x + 4, y);
+    if (hours / 10 == 0) drawSymbol(10, x, y);
+    else drawSymbol(hours / 10, x, y);
+    drawSymbol(hours % 10, x + 4, y);
     uint8_t currentX = x + 4;
     if(dots)
     {
         drawdots(x + 7, y, true);
-    // тут должны быть точки. Отдельной функцией
-        drawDig(minutes / 10, x + 8, y);
-        drawDig(minutes % 10, x + 12, y);
+        drawSymbol(minutes / 10, x + 8, y);
+        drawSymbol(minutes % 10, x + 12, y);
     }
 }
 
@@ -122,110 +121,107 @@ void drawdots(byte x, byte y, boolean state) {
     lcd.write(code);
 }
 
-void drawDig(byte dig, byte x, byte y) {
-    switch (dig) {
-        case 0:
-            lcd.setCursor(x, y);
-            lcd.write(0);
-            lcd.write(1);
-            lcd.write(2);
-            lcd.setCursor(x, y + 1);
-            lcd.write(3);
-            lcd.write(4);
-            lcd.write(5);
-        break;
-        case 1:
-            lcd.setCursor(x + 1, y);
-            lcd.write(1);
-            lcd.write(2);
-            lcd.setCursor(x + 2, y + 1);
-            lcd.write(5);
-        break;
-        case 2:
-            lcd.setCursor(x, y);
-            lcd.write(6);
-            lcd.write(6);
-            lcd.write(2);
-            lcd.setCursor(x, y + 1);
-            lcd.write(3);
-            lcd.write(7);
-            lcd.write(7);
-        break;
-        case 3:
-            lcd.setCursor(x, y);
-            lcd.write(6);
-            lcd.write(6);
-            lcd.write(2);
-            lcd.setCursor(x, y + 1);
-            lcd.write(7);
-            lcd.write(7);
-            lcd.write(5);
-        break;
-        case 4:
-            lcd.setCursor(x, y);
-            lcd.write(3);
-            lcd.write(4);
-            lcd.write(2);
-            lcd.setCursor(x + 2, y + 1);
-            lcd.write(5);
-        break;
-        case 5:
-            lcd.setCursor(x, y);
-            lcd.write(0);
-            lcd.write(6);
-            lcd.write(6);
-            lcd.setCursor(x, y + 1);
-            lcd.write(7);
-            lcd.write(7);
-            lcd.write(5);
-        break;
-        case 6:
-            lcd.setCursor(x, y);
-            lcd.write(0);
-            lcd.write(6);
-            lcd.write(6);
-            lcd.setCursor(x, y + 1);
-            lcd.write(3);
-            lcd.write(7);
-            lcd.write(5);
-        break;
-        case 7:
-            lcd.setCursor(x, y);
-            lcd.write(1);
-            lcd.write(1);
-            lcd.write(2);
-            lcd.setCursor(x + 1, y + 1);
-            lcd.write(0);
-        break;
-        case 8:
-            lcd.setCursor(x, y);
-            lcd.write(0);
-            lcd.write(6);
-            lcd.write(2);
-            lcd.setCursor(x, y + 1);
-            lcd.write(3);
-            lcd.write(7);
-            lcd.write(5);
-        break;
-        case 9:
-            lcd.setCursor(x, y);
-            lcd.write(0);
-            lcd.write(6);
-            lcd.write(2);
-            lcd.setCursor(x + 1, y + 1);
-            lcd.write(4);
-            lcd.write(5);
-        break;
-        case 10:
-            lcd.setCursor(x, y);
-            lcd.write(32);
-            lcd.write(32);
-            lcd.write(32);
-            lcd.setCursor(x, y + 1);
-            lcd.write(32);
-            lcd.write(32);
-            lcd.write(32);
-        break;
+void drawSymbol(byte digital, byte x, byte y) {
+    if(digital == 0) {
+        lcd.setCursor(x, y);
+        lcd.write(0);
+        lcd.write(1);
+        lcd.write(2);
+        lcd.setCursor(x, y + 1);
+        lcd.write(3);
+        lcd.write(4);
+        lcd.write(5);
+    }
+    else if(digital == 1) {
+        lcd.setCursor(x + 2, y);
+        lcd.write(2);
+        lcd.setCursor(x + 2, y + 1);
+        lcd.write(5);
+    }
+    else if(digital == 2) {
+        lcd.setCursor(x, y);
+        lcd.write(6);
+        lcd.write(6);
+        lcd.write(2);
+        lcd.setCursor(x, y + 1);
+        lcd.write(3);
+        lcd.write(7);
+        lcd.write(7);
+    }
+    else if(digital == 3) {
+        lcd.setCursor(x, y);
+        lcd.write(6);
+        lcd.write(6);
+        lcd.write(2);
+        lcd.setCursor(x, y + 1);
+        lcd.write(7);
+        lcd.write(7);
+        lcd.write(5);
+    }
+    else if(digital == 4) {
+        lcd.setCursor(x, y);
+        lcd.write(3);
+        lcd.write(4);
+        lcd.write(2);
+        lcd.setCursor(x + 2, y + 1);
+        lcd.write(5);
+    }
+    else if(digital == 5) {
+        lcd.setCursor(x, y);
+        lcd.write(0);
+        lcd.write(6);
+        lcd.write(6);
+        lcd.setCursor(x, y + 1);
+        lcd.write(7);
+        lcd.write(7);
+        lcd.write(5);
+    }
+    else if(digital == 6) {
+        lcd.setCursor(x, y);
+        lcd.write(0);
+        lcd.write(6);
+        lcd.write(6);
+        lcd.setCursor(x, y + 1);
+        lcd.write(3);
+        lcd.write(7);
+        lcd.write(5);
+    }
+    else if(digital == 7) {
+        lcd.setCursor(x, y);
+        lcd.write(1);
+        lcd.write(1);
+        lcd.write(2);
+        lcd.setCursor(x + 1, y + 1);
+        lcd.write(0);
+    }
+    else if(digital == 8) {
+        lcd.setCursor(x, y);
+        lcd.write(0);
+        lcd.write(6);
+        lcd.write(2);
+        lcd.setCursor(x, y + 1);
+        lcd.write(3);
+        lcd.write(7);
+        lcd.write(5);
+    }
+    else if(digital == 9) {
+        lcd.setCursor(x, y);
+        lcd.write(0);
+        lcd.write(6);
+        lcd.write(2);
+        lcd.setCursor(x + 1, y + 1);
+        lcd.write(4);
+        lcd.write(5);
+    }
+    else if(digital == 10) {
+        lcd.setCursor(x, y);
+        lcd.write(32);
+        lcd.write(32);
+        lcd.write(32);
+        lcd.setCursor(x, y + 1);
+        lcd.write(32);
+        lcd.write(32);
+        lcd.write(32);
     }
 }
 
