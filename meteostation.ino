@@ -15,11 +15,6 @@ GButton buttonSELECT(pinButtonSELECT);
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
 boolean showSettings = false;
-uint8_t displayEnableHours = 0,
-        displayEnableMinutes = 0,
-        displayDisableHours = 0,
-        displayDisableMinutes = 0,
-        displayTimeBacklight = 0;
 struct dateStruct {
     uint8_t seconds = 0;
     uint8_t minutes = 0;
@@ -27,8 +22,23 @@ struct dateStruct {
     uint8_t day = 0;
     uint8_t month = 0;
     int year = 0;
+    String dayTitle = "";
 } currentDate;
-// цифры
+
+struct config {
+    uint8_t enableHours = 0;
+    uint8_t enableMinutes = 0;
+    uint8_t disableHours = 0;
+    uint8_t disableMinutes = 0;
+    uint8_t timeBacklight = 0;
+    uint8_t timeUpdateScreen = 0;
+} cfg;
+
+enum {
+    SCREEN_TIME,
+    SCREEN_TEMP
+};
+
 uint8_t LT[8] = { 0b00111, 0b01111, 0b11111, 0b11111, 0b11111,  0b11111, 0b11111, 0b11111 };
 uint8_t UB[8] = { 0b11111, 0b11111, 0b11111, 0b00000, 0b00000,  0b00000, 0b00000, 0b00000 };
 uint8_t RT[8] = { 0b11100, 0b11110, 0b11111, 0b11111, 0b11111,  0b11111, 0b11111, 0b11111 };
@@ -38,42 +48,71 @@ uint8_t LR[8] = { 0b11111, 0b11111, 0b11111, 0b11111, 0b11111,  0b11111, 0b11110
 uint8_t UMB[8] = { 0b11111, 0b11111, 0b11111, 0b00000, 0b00000,  0b00000, 0b11111, 0b11111 };
 uint8_t LMB[8] = { 0b11111, 0b00000, 0b00000, 0b00000, 0b00000,  0b11111, 0b11111, 0b11111 };
 
+unsigned long int lastDisplayUpdate = 0;
+uint8_t currentScreen = SCREEN_TIME;
+unsigned long int timeBlinkDots = 0;
+
 void setup(void) {
     lcd.init();
+    //loadDataFromEEPROM();
+    createDisplaySymbols();
     buttonUP.setTickMode(AUTO);
     buttonDOWN.setTickMode(AUTO);
     buttonSELECT.setTickMode(AUTO);
     lcd.backlight();
+    lastDisplayUpdate = millis();
 
     Serial.begin(9600);
-
-    //loadDataFromEEPROM();
-    loadClock();
-    drawClock(10, 34, 2, 0, true);
 }
 
 void loop(void) {
-    
-    if(buttonSELECT.isTriple() && showSettings == false) {
-        getCurrentDate();
-        showSettingsScreen();
+    if(buttonSELECT.isTriple() && showSettings == true || showSettings == false) {
+        if(millis() - lastDisplayUpdate >= 3 * 1000) { // cfg.timeUpdateScreen
+            if(currentScreen == SCREEN_TIME) {
+                drawScreenTime();
+                //currentScreen = SCREEN_TEMP;
+            }
+            else if (currentScreen == SCREEN_TEMP) {
+                currentScreen = SCREEN_TIME;
+            }
+            lastDisplayUpdate = millis();
+        }
     }
-    else if(buttonSELECT.isTriple() && showSettings == true) showMainScreen();
 }
 
-void showSettingsScreen(void) {
+void drawScreenTime(void) {
     lcd.clear();
-    lcd.setCursor(6, 0);
-    lcd.print("SETTINGS");
-    lcd.setCursor(5, 1);
-    lcd.print(String(currentDate.day) + "." + String(currentDate.month) + "." + String(currentDate.year));
+    getCurrentDate();
+    drawNumber(currentDate.hours, 0, 0);
+    drawDots(7, 0);
+    drawNumber(currentDate.minutes, 8, 0);
+
+    lcd.setCursor(16, 0);
+    lcd.print(getDayTitle(getWeekDay(currentDate.year, currentDate.month, currentDate.day)));
+
+    Serial.println(String(currentDate.day) + "/" + String(currentDate.month) + "/" + String(currentDate.year % 100));
+
+    drawNumber(currentDate.day, 5, 2);
+    drawDot(12, 3);
+    drawNumber(currentDate.month, 13, 2);
 }
-/*
-  04/12/2019
-    21:53
-*/
-void showMainScreen(void) {
-    
+
+void loadDataFromEEPROM(void) {
+    cfg.enableHours = EEPROM.read(0);
+    cfg.enableMinutes = EEPROM.read(1);
+    cfg.disableHours = EEPROM.read(2);
+    cfg.disableMinutes = EEPROM.read(3);
+    cfg.timeBacklight = EEPROM.read(4);
+    cfg.timeUpdateScreen = EEPROM.read(5);
+    Serial.println("Display enable before " + String(cfg.enableHours) + ":" + String(cfg.enableMinutes));
+    Serial.println("Display disable before " + String(cfg.disableHours) + ":" + String(cfg.disableMinutes));
+    Serial.println("Display time backlight is " + String(cfg.timeBacklight) + "(s)");
+    Serial.println("Screen update time is " + String(cfg.timeUpdateScreen) + "(s)");
+}
+
+void drawNumber(uint8_t number, uint8_t x, uint8_t y) {
+    drawSymbol(number / 10, x, y);
+    drawSymbol(number % 10, x + 4, y);
 }
 
 void getCurrentDate(void) {
@@ -83,45 +122,32 @@ void getCurrentDate(void) {
     currentDate.day = rtc.getDate();
     currentDate.month = rtc.getMonth();
     currentDate.year = rtc.getYear();
+    currentDate.dayTitle = getDayTitle(getWeekDay(currentDate.year, currentDate.month, currentDate.day));
 }
 
-void loadDataFromEEPROM(void) {
-    displayEnableHours = EEPROM.read(0);
-    displayEnableMinutes = EEPROM.read(1);
-    displayDisableHours = EEPROM.read(2);
-    displayDisableMinutes = EEPROM.read(3);
-    displayTimeBacklight = EEPROM.read(4);
-    Serial.println("Display enable before " + String(displayEnableHours) + ":" + String(displayEnableMinutes));
-    Serial.println("Display disable before " + String(displayDisableHours) + ":" + String(displayDisableMinutes));
-    Serial.println("Display time backlight is " + String(displayTimeBacklight) + " seconds");
+String getDayTitle(uint8_t day) {
+    if(day == 1) return "Pon"; //return "Пон";
+    else if(day == 2) return "Vtor"; //return "Втор";
+    else if(day == 3) return "Sred"; //return "Сред";
+    else if(day == 4) return "Chet"; //return "Четв";
+    else if(day == 5) return "Patn"; //return "Пятн";
+    else if(day == 6) return "Subb"; //return "Субб";
+    else if(day == 7) return "Vskr"; //return "Вскр";
 }
 
-void drawClock(byte hours, byte minutes, byte x, byte y, boolean dots) {
-    lcd.clear();
-
-    if (hours / 10 == 0) drawSymbol(10, x, y);
-    else drawSymbol(hours / 10, x, y);
-    drawSymbol(hours % 10, x + 4, y);
-    uint8_t currentX = x + 4;
-    if(dots)
-    {
-        drawdots(x + 7, y, true);
-        drawSymbol(minutes / 10, x + 8, y);
-        drawSymbol(minutes % 10, x + 12, y);
-    }
-}
-
-void drawdots(byte x, byte y, boolean state) {
-    byte code;
-    if (state) code = 165;
-    else code = 32;
+void drawDots(uint8_t x, uint8_t y) {
     lcd.setCursor(x, y);
-    lcd.write(code);
+    lcd.write(165);
     lcd.setCursor(x, y + 1);
-    lcd.write(code);
+    lcd.write(165);
 }
 
-void drawSymbol(byte digital, byte x, byte y) {
+void drawDot(uint8_t x, uint8_t y) {
+    lcd.setCursor(x, y);
+    lcd.write(46);
+}
+
+void drawSymbol(uint8_t digital, uint8_t x, uint8_t y) {
     if(digital == 0) {
         lcd.setCursor(x, y);
         lcd.write(0);
@@ -209,23 +235,18 @@ void drawSymbol(byte digital, byte x, byte y) {
         lcd.write(0);
         lcd.write(6);
         lcd.write(2);
-        lcd.setCursor(x + 1, y + 1);
+        lcd.setCursor(x, y + 1);
+        lcd.write(4);
         lcd.write(4);
         lcd.write(5);
     }
     else if(digital == 10) {
-        lcd.setCursor(x, y);
-        lcd.write(32);
-        lcd.write(32);
-        lcd.write(32);
-        lcd.setCursor(x, y + 1);
-        lcd.write(32);
-        lcd.write(32);
-        lcd.write(32);
+        drawSymbol(1, x, y);
+        drawSymbol(0, x + 4, y);
     }
 }
 
-void loadClock() {
+void createDisplaySymbols() {
     lcd.createChar(0, LT);
     lcd.createChar(1, UB);
     lcd.createChar(2, RT);
@@ -236,20 +257,15 @@ void loadClock() {
     lcd.createChar(7, LMB);
 }
 
-/*
-void printTime() {
-    Serial.print(rtc.getHours());
-    Serial.print(":");
-    Serial.print(rtc.getMinutes());
-    Serial.print(":");
-    Serial.print(rtc.getSeconds());
-    Serial.print(" ");
-    Serial.print(rtc.getDay());
-    Serial.print(" ");
-    Serial.print(rtc.getDate());
-    Serial.print("/");
-    Serial.print(rtc.getMonth());
-    Serial.print("/");
-    Serial.println(rtc.getYear());
+const uint8_t daysInMonth [] PROGMEM = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+static uint16_t getWeekDay(uint16_t y, uint8_t m, uint8_t d) {
+  if (y >= 2000)
+    y -= 2000;
+  uint16_t days = d;
+  for (uint8_t i = 1; i < m; ++i)
+    days += pgm_read_byte(daysInMonth + i - 1);
+  if (m > 2 && y % 4 == 0)
+    ++days;
+  //return days + 365 * y + (y + 3) / 4 - 1;
+  return (days + 365 * y + (y + 3) / 4 - 1 + 6) % 7;
 }
-*/
