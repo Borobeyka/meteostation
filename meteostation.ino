@@ -1,18 +1,24 @@
 #define pinButtonUP         12
 #define pinButtonDOWN       7
 #define pinButtonSELECT     3
+#define pinDS18B20_IN       2
+#define pinDS18B20_OUT      4
 
 #include <EEPROM.h>
 #include "GyverButton.h"
 #include "microDS3231.h"
 #include "microDS18B20.h"
 #include "microLiquidCrystal_I2C.h"
+#include "microWire.h"
 
 MicroDS3231 rtc;
 GButton buttonUP(pinButtonUP);
 GButton buttonDOWN(pinButtonDOWN);
 GButton buttonSELECT(pinButtonSELECT);
 LiquidCrystal_I2C lcd(0x27, 20, 4);
+
+MicroDS18B20 tempIN(pinDS18B20_IN);
+MicroDS18B20 tempOUT(pinDS18B20_OUT);
 
 boolean showSettings = false;
 struct dateStruct {
@@ -48,49 +54,84 @@ uint8_t LR[8] = { 0b11111, 0b11111, 0b11111, 0b11111, 0b11111,  0b11111, 0b11110
 uint8_t UMB[8] = { 0b11111, 0b11111, 0b11111, 0b00000, 0b00000,  0b00000, 0b11111, 0b11111 };
 uint8_t LMB[8] = { 0b11111, 0b00000, 0b00000, 0b00000, 0b00000,  0b11111, 0b11111, 0b11111 };
 
-unsigned long int lastDisplayUpdate = 0;
+unsigned long int lastTimeUpdateScreen = 0;
 uint8_t currentScreen = SCREEN_TIME;
 unsigned long int timeBlinkDots = 0;
 
 void setup(void) {
     lcd.init();
+    //rtc.setTime(COMPILE_TIME);
     //loadDataFromEEPROM();
     createDisplaySymbols();
     buttonUP.setTickMode(AUTO);
     buttonDOWN.setTickMode(AUTO);
     buttonSELECT.setTickMode(AUTO);
     lcd.backlight();
-    lastDisplayUpdate = millis();
+    lastTimeUpdateScreen = millis();
 
+    // tempIN.requestTemp();
+    // tempOUT.requestTemp();
+    // delay(1000);
     Serial.begin(9600);
+    // Serial.print(sensor1.getTemp());
+    // Serial.println(sensor2.getTemp());
 }
 
 void loop(void) {
     if(buttonSELECT.isTriple() && showSettings == true || showSettings == false) {
-        if(millis() - lastDisplayUpdate >= 3 * 1000) { // cfg.timeUpdateScreen
+        if(millis() - lastTimeUpdateScreen >= 3 * 1000) { // cfg.timeUpdateScreen
             if(currentScreen == SCREEN_TIME) {
                 drawScreenTime();
-                //currentScreen = SCREEN_TEMP;
+                currentScreen = SCREEN_TEMP;
             }
             else if (currentScreen == SCREEN_TEMP) {
+                drawScreenTemp();
                 currentScreen = SCREEN_TIME;
             }
-            lastDisplayUpdate = millis();
+            lastTimeUpdateScreen = millis();
         }
     }
+}
+
+void drawScreenTemp(void) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    uint8_t x = 0;
+    int temp_OUT = tempOUT.getTemp();
+    int temp_IN = tempIN.getTemp();
+    if(temp_OUT < 0) {
+        drawMinus(x, 0);
+        x += 2;
+    }
+    drawNumber((uint8_t)temp_OUT, x, 0);
+    x += 8;
+    lcd.setCursor(x, 0);
+    lcd.write(223);
+
+
+    x = 9;
+    lcd.setCursor(x, 2);
+     if(temp_IN < 0) {
+        drawMinus(x, 2);
+        x += 2;
+    }
+    drawNumber((uint8_t)temp_IN, x, 2);
+    x += 8;
+    lcd.setCursor(x, 2);
+    lcd.write(223);
 }
 
 void drawScreenTime(void) {
     lcd.clear();
     getCurrentDate();
+    tempOUT.requestTemp();
+    tempIN.requestTemp();
     drawNumber(currentDate.hours, 0, 0);
     drawDots(7, 0);
     drawNumber(currentDate.minutes, 8, 0);
 
-    lcd.setCursor(16, 0);
+    lcd.setCursor(17, 0);
     lcd.print(getDayTitle(getWeekDay(currentDate.year, currentDate.month, currentDate.day)));
-
-    Serial.println(String(currentDate.day) + "/" + String(currentDate.month) + "/" + String(currentDate.year % 100));
 
     drawNumber(currentDate.day, 5, 2);
     drawDot(12, 3);
@@ -125,14 +166,19 @@ void getCurrentDate(void) {
     currentDate.dayTitle = getDayTitle(getWeekDay(currentDate.year, currentDate.month, currentDate.day));
 }
 
+void drawMinus(uint8_t x, uint8_t y) {
+    lcd.setCursor(x, y);
+    lcd.write(4);
+}
+
 String getDayTitle(uint8_t day) {
-    if(day == 1) return "Pon"; //return "Пон";
-    else if(day == 2) return "Vtor"; //return "Втор";
-    else if(day == 3) return "Sred"; //return "Сред";
-    else if(day == 4) return "Chet"; //return "Четв";
-    else if(day == 5) return "Patn"; //return "Пятн";
-    else if(day == 6) return "Subb"; //return "Субб";
-    else if(day == 7) return "Vskr"; //return "Вскр";
+    if(day == 1) return "Mon";
+    else if(day == 2) return "Tue";
+    else if(day == 3) return "Wed";
+    else if(day == 4) return "Thu";
+    else if(day == 5) return "Fri";
+    else if(day == 6) return "Sat";
+    else if(day == 7) return "Sun";
 }
 
 void drawDots(uint8_t x, uint8_t y) {
