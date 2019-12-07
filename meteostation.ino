@@ -71,7 +71,7 @@ struct date {
 
 void setup(void) {
     lcd.init();
-    lcd.noBacklight();
+    lcd.backlight();
     lcd.setCursor(4, 1);
     lcd.print("Loading...");
     //#########################################################
@@ -89,10 +89,8 @@ void setup(void) {
 }
 
 void loop(void) {
-    if(currentDate.hours >= config.enableHours && currentDate.minutes >= config.enableMinutes) lcd.backlight();
-    if(currentDate.hours >= config.disableHours && currentDate.minutes >= config.disableMinutes) lcd.noBacklight();
-
-    if(millis() - lastTimeScreensUpdate > config.timeChangeScreens * 1000 && isSettings == false) { // config.timeChangeScreens
+       
+    if(millis() - lastTimeScreensUpdate > config.timeChangeScreens * 1000 && isSettings == false) {
         if(currentScreen == SCREEN_TIME) _showScreenTime();
         else if(currentScreen == SCREEN_TEMP) _showScreenTemp();
         lastTimeScreensUpdate = millis();
