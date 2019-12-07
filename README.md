@@ -1,1 +1,1 @@
-# Метеостанция на базе платформы Arduino
+# Arduino Weather Station
