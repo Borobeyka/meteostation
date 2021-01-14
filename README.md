@@ -1,4 +1,4 @@
 # Arduino Weather Station
 
-![Иллюстрация к проекту](https://github.com/Borobeyka/meteostation/blob/master/1.jpg)
-![Иллюстрация к проекту](https://github.com/Borobeyka/meteostation/blob/master/2.jpg)
+![Страница с временем](https://github.com/Borobeyka/meteostation/blob/master/images/1.jpg)
+![Страница с температурами](https://github.com/Borobeyka/meteostation/blob/master/images/2.jpg)
