@@ -17,5 +17,7 @@
 
 #### *Ниже представлены фотографии работы устройства*
 
-![](https://github.com/Borobeyka/meteostation/blob/master/images/1.jpg)
-![](https://github.com/Borobeyka/meteostation/blob/master/images/2.jpg)
+![](https://user-images.githubusercontent.com/47686912/213996145-4cc6bc7d-4e1b-438e-a2c0-eb1f06c7e57a.jpg)
+![](https://user-images.githubusercontent.com/47686912/213996149-6080aa19-cb13-497a-8259-1188ef67d57a.jpg)
+![](https://user-images.githubusercontent.com/47686912/213996152-b178ad4d-beb3-484c-b026-04e9a8050e91.jpg)
+![](https://user-images.githubusercontent.com/47686912/213996153-9cd9defa-5c9d-428c-80a8-3592a17f7965.jpg)
